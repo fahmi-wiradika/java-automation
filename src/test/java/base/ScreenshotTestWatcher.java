@@ -16,7 +16,10 @@ public class ScreenshotTestWatcher implements TestWatcher {
     public void testSuccessful(ExtensionContext context) {
         // Clean up driver resources for successful parallel tests too
         try {
-            context.getTestInstance().ifPresent(this::cleanupDriverResourcesIfParallel);
+            Object testInstance = context.getTestInstance().orElse(null);
+            if (testInstance != null) {
+                cleanupDriverResourcesIfParallel(testInstance);
+            }
         } catch (Exception e) {
             logger.log(Level.WARNING, "Failed to cleanup driver resources after successful test", e);
         }
@@ -24,7 +27,10 @@ public class ScreenshotTestWatcher implements TestWatcher {
 
     @Override
     public void testFailed(ExtensionContext context, Throwable cause) {
-        String testMethodName = context.getDisplayName();
+        // Use the raw method name (always filesystem-safe) instead of getDisplayName()
+        // which includes parameterized test arguments that may contain illegal path characters
+        // like ':', '(', ')', '[', ']' etc. on Windows.
+        String testMethodName = context.getRequiredTestMethod().getName();
         String testClassName = context.getTestClass()
                 .map(Class::getSimpleName)
                 .orElse("UnknownTest");
@@ -54,9 +60,12 @@ public class ScreenshotTestWatcher implements TestWatcher {
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Failed to capture failure screenshot for test: " + testMethodName, e);
 
-            // Still try to clean up driver resources even if screenshot failed
+            // Still try to cleanup driver resources even if screenshot failed
             try {
-                context.getTestInstance().ifPresent(this::cleanupDriverResourcesIfParallel);
+                Object testInstance = context.getTestInstance().orElse(null);
+                if (testInstance != null) {
+                    cleanupDriverResourcesIfParallel(testInstance);
+                }
             } catch (Exception cleanupException) {
                 logger.log(Level.WARNING, "Failed to cleanup driver resources", cleanupException);
             }
@@ -69,7 +78,8 @@ public class ScreenshotTestWatcher implements TestWatcher {
     private void cleanupDriverResourcesIfParallel(Object testInstance) {
         try {
             // Check if this extends ParallelBaseTests
-            Class<?> currentClass = testInstance.getClass();
+            Class<?> testClass = testInstance.getClass();
+            Class<?> currentClass = testClass;
 
             boolean isParallelTest = false;
             while (currentClass != null && !currentClass.equals(Object.class)) {
@@ -155,7 +165,7 @@ public class ScreenshotTestWatcher implements TestWatcher {
      */
     private ScreenshotHandler tryGetScreenshotHandlerViaMethod(Object testInstance) {
         try {
-            Method getScreenshotHandlerMethod = findMethodInHierarchy(testInstance.getClass());
+            Method getScreenshotHandlerMethod = findMethodInHierarchy(testInstance.getClass(), "getScreenshotHandler");
             if (getScreenshotHandlerMethod != null) {
                 getScreenshotHandlerMethod.setAccessible(true);
                 return (ScreenshotHandler) getScreenshotHandlerMethod.invoke(testInstance);
@@ -198,12 +208,14 @@ public class ScreenshotTestWatcher implements TestWatcher {
             Class<?> screenshotHandlerClass = ScreenshotHandler.class;
 
             // Try to find a static method or field in ScreenshotHandler that can give us the current instance
-            Method getDriverMethod = screenshotHandlerClass.getDeclaredMethod("driver");
-            getDriverMethod.setAccessible(true);
-            Object driver = getDriverMethod.invoke(null);
-            if (driver != null) {
-                // Create a new ScreenshotHandler with the driver
-                return new ScreenshotHandler((org.openqa.selenium.WebDriver) driver);
+            Method getDriverMethod = screenshotHandlerClass.getDeclaredMethod("getDriver");
+            if (getDriverMethod != null) {
+                getDriverMethod.setAccessible(true);
+                Object driver = getDriverMethod.invoke(null);
+                if (driver != null) {
+                    // Create a new ScreenshotHandler with the driver
+                    return new ScreenshotHandler((org.openqa.selenium.WebDriver) driver);
+                }
             }
         } catch (Exception e) {
             logger.log(Level.FINE, "Failed to get ScreenshotHandler via static method", e);
@@ -280,11 +292,11 @@ public class ScreenshotTestWatcher implements TestWatcher {
     /**
      * Find a method in the class hierarchy
      */
-    private Method findMethodInHierarchy(Class<?> clazz) {
+    private Method findMethodInHierarchy(Class<?> clazz, String methodName) {
         Class<?> currentClass = clazz;
         while (currentClass != null && !currentClass.equals(Object.class)) {
             try {
-                return currentClass.getDeclaredMethod("getScreenshotHandler");
+                return currentClass.getDeclaredMethod(methodName);
             } catch (NoSuchMethodException e) {
                 // Method not found in this class, try superclass
                 currentClass = currentClass.getSuperclass();

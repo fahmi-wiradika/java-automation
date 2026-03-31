@@ -1,6 +1,5 @@
 package utils;
 
-import lombok.Getter;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
@@ -8,22 +7,9 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
 
-@Getter
 public class SafeAction {
-    /**
-     * -- GETTER --
-     *  Gets the WebDriver instance
-     */
     private final WebDriver driver;
-    /**
-     * -- GETTER --
-     *  Gets the default WebDriverWait instance
-     */
     private final WebDriverWait wait;
-    /**
-     * -- GETTER --
-     *  Gets the long WebDriverWait instance
-     */
     private final WebDriverWait longWait;
 
     // Highlight configuration
@@ -302,9 +288,9 @@ public class SafeAction {
             WebElement element = wait.until(ExpectedConditions.elementToBeClickable(locator));
             highlightElement(element); // Highlight before input
 
-            element.clear();
-            // element.sendKeys(Keys.CONTROL+"a");
-            // element.sendKeys(Keys.DELETE);
+            // element.clear();
+            element.sendKeys(Keys.CONTROL+"a");
+            element.sendKeys(Keys.DELETE);
 
             element.sendKeys(text);
             // waitForElementToHaveValue(locator, text);
@@ -461,4 +447,27 @@ public class SafeAction {
         // You can add this as an instance variable if needed
     }
 
+    /**
+     * Gets the WebDriver instance
+     * @return The WebDriver instance
+     */
+    public WebDriver getDriver() {
+        return driver;
+    }
+
+    /**
+     * Gets the default WebDriverWait instance
+     * @return The WebDriverWait instance
+     */
+    public WebDriverWait getWait() {
+        return wait;
+    }
+
+    /**
+     * Gets the long WebDriverWait instance
+     * @return The long WebDriverWait instance
+     */
+    public WebDriverWait getLongWait() {
+        return longWait;
+    }
 }

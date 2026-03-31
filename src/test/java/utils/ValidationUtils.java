@@ -160,34 +160,6 @@ public class ValidationUtils {
         }
     }
 
-//    private Object normalize(Object value) {
-//        if (value == null) return null;
-//        if (value instanceof Number) return ((Number) value).longValue();
-//        String s = String.valueOf(value);
-//        // Strip leading/trailing whitespace and quotes
-//        s = s.trim();
-//        if (s.startsWith("\"") && s.endsWith("\"") && s.length() >= 2) {
-//            s = s.substring(1, s.length() - 1).trim();
-//        }
-//        // Handle quantity pattern like "Qty: 12"
-//        if (s.matches("(?i)qty:\\s*[-+]?\\d+")) {
-//            s = s.replaceAll("(?i)qty:\\s*", "");
-//        }
-//        // Remove currency and thousand separators e.g., "IDR 17.000,00"
-//        s = s.replace("IDR", "").replace("Rp", "").trim();
-//        // Replace locale-specific thousand/decimal separators
-//        s = s.replace(".", "").replace(",", "");
-//        // If becomes a plain integer string (allow leading sign), parse to number
-//        if (s.matches("[-+]?\\d+")) {
-//            try {
-//                return Long.parseLong(s);
-//            } catch (NumberFormatException ignored) {
-//                // fall through to string compare
-//            }
-//        }
-//        return s;
-//    }
-
     /**
      * Helper method to check if value represents true
      */

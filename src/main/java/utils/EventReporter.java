@@ -8,9 +8,12 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.events.WebDriverListener;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 @Setter
 public class EventReporter implements WebDriverListener {
+    private static final Logger logger = Logger.getLogger(EventReporter.class.getName());
     private static final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
 
     // Configuration methods
@@ -37,6 +40,13 @@ public class EventReporter implements WebDriverListener {
         System.out.flush(); // Force immediate output
     }
 
+    private void logWithLevel(String message, Level level) {
+        String timestamp = includeTimestamp ? "[" + LocalDateTime.now().format(timeFormatter) + "] " : "";
+        String logMessage = timestamp + message;
+        logger.log(level, logMessage);
+        System.out.println(logMessage);
+        System.out.flush(); // Force immediate output
+    }
 
     @Override
     public void beforeGet(WebDriver driver, String url) {
